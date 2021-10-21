@@ -1,0 +1,65 @@
+name: "Custom CodeQL bundles"
+
+on:
+  pull_request:
+    paths:
+      - "customizations/**"
+      - "bundles.json"
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  prepare-bundles-matrix:
+    name: "Prepare CodeQL bundle matrix"
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.export-bundle-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Export CodeQL bundle matrix
+        id: export-bundle-matrix
+        run: |
+          echo "::set-output name=matrix::$(
+            jq --compact-output . bundles.json
+          )"
+
+  build-bundles:
+    name: "Build custom CodeQL bundles"
+    needs: prepare-bundles-matrix
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare-bundles-matrix.outputs.matrix) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: "Build custom CodeQL bundle"
+        env:
+          CODEQL_BUNDLE: ${{ matrix.bundle }}
+        run: |
+          gh release --repo github/codeql-action download -p codeql-bundle.tar.gz ${CODEQL_BUNDLE}
+
+          tar xf codeql-bundle.tar.gz
+          rm codeql-bundle.tar.gz
+
+          for lang in customizations/*; do
+            mkdir codeql/qlpacks/codeql-$(basename $lang)-lib/customizations
+            cp $lang/*.qll codeql/qlpacks/codeql-$(basename $lang)-lib/customizations
+
+            for module in $lang/*.qll; do
+              module_file=${module##*/}
+              module_name=${module_file%.*}
+              echo "import customizations.$module_name" >> codeql/qlpacks/codeql-$(basename $lang)-lib/Customizations.qll
+            done
+          done
+
+          tar -czf codeql-bundle.tar.gz codeql
+          rm -r codeql
+
+          gh release create ${CODEQL_BUNDLE}-${GITHUB_SHA} codeql-bundle.tar.gz
