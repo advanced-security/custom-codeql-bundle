@@ -42,6 +42,7 @@ jobs:
       - name: "Build custom CodeQL bundle"
         env:
           CODEQL_BUNDLE: ${{ matrix.bundle }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           gh release --repo github/codeql-action download -p codeql-bundle.tar.gz ${CODEQL_BUNDLE}
 
