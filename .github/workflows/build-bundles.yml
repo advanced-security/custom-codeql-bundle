@@ -44,20 +44,27 @@ jobs:
           CODEQL_BUNDLE: ${{ matrix.bundle }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release --repo github/codeql-action download -p codeql-bundle.tar.gz ${CODEQL_BUNDLE}
+          gh release --repo github/codeql-action download -p codeql-bundle.tar.gz $CODEQL_BUNDLE
 
           tar xf codeql-bundle.tar.gz
           rm codeql-bundle.tar.gz
 
-          for lang in customizations/*; do
-            mkdir codeql/qlpacks/codeql-$(basename $lang)-lib/customizations
-            cp $lang/*.qll codeql/qlpacks/codeql-$(basename $lang)-lib/customizations
+          for lang_path in customizations/*; do
+            # Copy custom modules
+            lang=${lang_path##*/}
+            mkdir codeql/qlpacks/codeql-$lang-lib/customizations
+            cp $lang_path/*.qll codeql/qlpacks/codeql-$lang-lib/customizations
 
-            for module in $lang/*.qll; do
-              module_file=${module##*/}
+            # Import custom modules
+            for module_path in $lang_path/*.qll; do
+              module_file=${module_path##*/}
               module_name=${module_file%.*}
-              echo "import customizations.$module_name" >> codeql/qlpacks/codeql-$(basename $lang)-lib/Customizations.qll
+              echo "import customizations.$module_name" >> codeql/qlpacks/codeql-$lang-lib/Customizations.qll
             done
+
+            # Rebuild cache
+            rm -r codeql/qlpacks/codeql-$lang/.cache
+            codeql/codeql query compile --search-path codeql --threads 0 codeql/qlpacks/codeql-$lang
           done
 
           tar -czf codeql-bundle.tar.gz codeql
