@@ -70,4 +70,4 @@ jobs:
           tar -czf codeql-bundle.tar.gz codeql
           rm -r codeql
 
-          gh release create ${CODEQL_BUNDLE}-${GITHUB_SHA} codeql-bundle.tar.gz
+          gh release create ${CODEQL_BUNDLE}-$(git rev-parse --short $GITHUB_SHA) codeql-bundle.tar.gz
