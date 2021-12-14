@@ -71,7 +71,7 @@ jobs:
               if [ ! -f $qllib_path/Customizations.qll && "$FORCE_CUSTOMIZATION" == "true" ]; then
                 echo "::warning::Forcing customization for language $lang"
                 echo "import $lang" > $qllib_path/Customizations.qll
-                sed -i '1i import Customizations' file
+                sed -i -e 's/^$/\nprivate import Customizations/1' $qllib_path/$lang.qll
               fi
 
               if [ -f $qllib_path/Customizations.qll ];
