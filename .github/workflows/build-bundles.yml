@@ -55,13 +55,13 @@ jobs:
 
             
             if [ -d codeql/qlpacks/codeql-$lang-lib ]; then
-              qllib_path=codeql/qlpacks/codeql-$lang-lib/
-              qlquery_path=qllib_path
+              qllib_path=codeql/qlpacks/codeql-$lang-lib
+              qlquery_path=codeql/qlpacks/codeql-$lang
             else
               qllib_version=$(ls codeql/qlpacks/codeql/$lang-all)
-              qllib_path=codeql/qlpacks/codeql/$lang-all/$qllib_version/
+              qllib_path=codeql/qlpacks/codeql/$lang-all/$qllib_version
               qlquery_version=$(ls codeql/qlpacks/codeql/$lang-queries)
-              qlquery_path=codeql/qlpacks/codeql/$lang-all/$qlquery_version/
+              qlquery_path=codeql/qlpacks/codeql/$lang-queries/$qlquery_version
             fi
 
             if [ -f $qllib_path/Customizations.qll ];
