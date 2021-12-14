@@ -9,6 +9,9 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  FORCE_CUSTOMIZATION: "true"
+
 jobs:
   prepare-bundles-matrix:
     name: "Prepare CodeQL bundle matrix"
@@ -64,6 +67,12 @@ jobs:
               qlquery_path=codeql/qlpacks/codeql/$lang-queries/$qlquery_version
             fi
 
+            if [ ! -f $qllib_path/Customizations.qll && "$FORCE_CUSTOMIZATION" == "true" ]; then
+              echo "::warning::Forcing customization for language $lang"
+              echo "import $lang" > $qllib_path/Customizations.qll
+              sed -i '1i import Customizations' file
+            fi
+
             if [ -f $qllib_path/Customizations.qll ];
             then 
               mkdir $qllib_path/customizations
@@ -80,7 +89,7 @@ jobs:
               rm -r $qlquery_path/.cache
               codeql/codeql query compile --search-path codeql --threads 0 $qlquery_path
             else
-              echo "Skipping customization for language $lang, because it doesn't have a Customizations.qll"
+              echo "::warning::Skipping customization for language $lang, because it doesn't have a Customizations.qll"
             fi
           done
 
