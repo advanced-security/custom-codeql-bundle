@@ -52,19 +52,36 @@ jobs:
           for lang_path in customizations/*; do
             # Copy custom modules
             lang=${lang_path##*/}
-            mkdir codeql/qlpacks/codeql-$lang-lib/customizations
-            cp $lang_path/*.qll codeql/qlpacks/codeql-$lang-lib/customizations
 
-            # Import custom modules
-            for module_path in $lang_path/*.qll; do
-              module_file=${module_path##*/}
-              module_name=${module_file%.*}
-              echo "import customizations.$module_name" >> codeql/qlpacks/codeql-$lang-lib/Customizations.qll
-            done
+            
+            if [ -d codeql/qlpacks/codeql-$lang-lib ]; then
+              qllib_path=codeql/qlpacks/codeql-$lang-lib
+              qlquery_path=codeql/qlpacks/codeql-$lang
+            else
+              qllib_version=$(ls codeql/qlpacks/codeql/$lang-all)
+              qllib_path=codeql/qlpacks/codeql/$lang-all/$qllib_version
+              qlquery_version=$(ls codeql/qlpacks/codeql/$lang-queries)
+              qlquery_path=codeql/qlpacks/codeql/$lang-queries/$qlquery_version
+            fi
 
-            # Rebuild cache
-            rm -r codeql/qlpacks/codeql-$lang/.cache
-            codeql/codeql query compile --search-path codeql --threads 0 codeql/qlpacks/codeql-$lang
+            if [ -f $qllib_path/Customizations.qll ];
+            then 
+              mkdir $qllib_path/customizations
+              cp $lang_path/*.qll $qllib_path/customizations
+
+              # Import custom modules
+              for module_path in $lang_path/*.qll; do
+                module_file=${module_path##*/}
+                module_name=${module_file%.*}
+                echo "import customizations.$module_name" >> $qllib_path/Customizations.qll
+              done
+
+              # Rebuild cache
+              rm -r $qlquery_path/.cache
+              codeql/codeql query compile --search-path codeql --threads 0 $qlquery_path
+            else
+              echo "Skipping customization for language $lang, because it doesn't have a Customizations.qll"
+            fi
           done
 
           tar -czf codeql-bundle.tar.gz codeql
