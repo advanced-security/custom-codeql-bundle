@@ -41,43 +41,67 @@ with your additions.
    CodeQL version that will be used with your queries. 
 
 3. Add your customizations to the `customizations/<language>` directory within
-   the root of this repository. You may add as many independent `.ql` and `.qll`
+   the root of this repository. You may add as many independent `.qll`
    files in these directories as you wish. They will be combined and added to
    the appropriate extension points within your target language. 
 
 4. Modify your `codeql-analysis.yml` file to point at your custom bundle. Please
    see the following file for an example: https://github.com/advanced-security/custom-codeql-bundle-test/blob/develop/.github/workflows/codeql-analysis.yml
 
-The relevant portion of that file is the following: 
+The relevant portion of that file when the CodeQL bundle repository is private is the following: 
 
 ```yml
 steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-      
-    - name: Download CodeQL bundle
-      env:
-        GITHUB_TOKEN: ${{ secrets.CODEQL_BUNDLE_PAT }}
-      run: |
-        gh release -R <your-clone-of-custom-codeql-bundle> download <tag>
+  - name: Download CodeQL bundle
+    env:
+      GITHUB_TOKEN: ${{ secrets.CODEQL_BUNDLE_PAT }}
+    run: |
+      # Download custom CodeQL bundle as codeql-bundle.tar.gz
+      gh release -R <your-clone-of-custom-codeql-bundle> download <tag>
+    # Initializes the CodeQL tools for scanning.
+  - name: Initialize CodeQL
+    uses: github/codeql-action/init@v1
+    with:
+      languages: ${{ matrix.language }}
+      # Specify the use of our custom CodeQL bundle
+      tools: codeql-bundle.tar.gz
 ```
 
-In the above, you set the location of your bundle as well as the tag. 
+In the above, you set the location of your bundle as well as the tag.
+
+If the CodeQL bundle repository is public, or the bundle is stored in a public location, then we can directly specify it in the `tools` configuration like:
+
+```yml
+steps:
+    # Initializes the CodeQL tools for scanning.
+  - name: Initialize CodeQL
+    uses: github/codeql-action/init@v1
+    with:
+      languages: ${{ matrix.language }}
+      # Specify the use of our custom CodeQL bundle
+      tools: https://<url>/<version>/codeql-bundle.tar.gz
+```
+
+Where `<version>` follows the versioning scheme used in the `bundles.json`
 
 Once these steps are performed, you will be able to analyze your project using
 your custom CodeQL bundle with your customizations in place. 
 
-To get an idea of the sorts of source customizations that are possible, please
-see: 
+To get an idea of the sorts of customizations that are possible, please
+see:
 
-https://github.com/advanced-security/custom-codeql-bundle/blob/main/customizations/javascript/CustomSources.qll
+- https://codeql.github.com/docs/codeql-language-guides/specifying-additional-remote-flow-sources-for-javascript/
+- https://codeql.github.com/docs/codeql-language-guides/analyzing-data-flow-in-csharp/#flow-sources
+- https://codeql.github.com/docs/codeql-language-guides/modeling-data-flow-in-go-libraries/#sources
+- https://codeql.github.com/docs/codeql-language-guides/analyzing-data-flow-in-java/#flow-sources
+- https://codeql.github.com/docs/codeql-language-guides/analyzing-data-flow-in-python/#predefined-sources-and-sinks
 
 
 # Limitations 
 
 This repository may be used to refine the behavior of the out of the box queries
 by: 
-- Extending existing classes
+- Extending existing [abstract classes](https://codeql.github.com/docs/ql-language-reference/types/#abstract-classes)
 - Adding additional sinks and sources specific to your organization
 
 It may not be used for replacing classes within CodeQL. 
