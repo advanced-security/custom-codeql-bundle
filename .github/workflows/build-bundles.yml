@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  FORCE_CUSTOMIZATION: "true"
+  FORCE_CUSTOMIZATION: "false"
 
 jobs:
   prepare-bundles-matrix:
