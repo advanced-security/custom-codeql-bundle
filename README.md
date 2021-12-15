@@ -15,6 +15,7 @@ At current this repository will work with the following languages:
 
 Official support for Ruby will be added when the `Customizations.qll` is made available in the selected CodeQL bundles specified in the `bundles.json`.
 As an unofficial workaround you can change the environment variable `FORCE_CUSTOMIZATION` in the `.github/build-bundles.yml` to `"true"`.
+The forced customization will create a `Customizations.qll` file and prepend it to the language specific library (e.g., `cpp.qll`, `ruby.qll`).
 
 # Using the Custom CodeQL Bundle
 
