@@ -8,6 +8,10 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      bundle:
+        description: "Which bundle to create. Use '*' to use the bundles.json content"
+        default: "codeql-bundle-20220214"
 
 env:
   FORCE_CUSTOMIZATION: "false"
@@ -23,11 +27,18 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Export CodeQL bundle matrix
+        env: 
+          BUNDLE: ${{ github.event.inputs.bundle }}
         id: export-bundle-matrix
         run: |
-          echo "::set-output name=matrix::$(
-            jq --compact-output . bundles.json
-          )"
+          if [ $BUNDLE == "*" ]
+          then
+            echo "::set-output name=matrix::$(
+              jq --compact-output . bundles.json
+            )"
+          else
+            echo "::set-output name=matrix::{\"bundle\":[\"$BUNDLE\"]}"
+          fi
 
   build-bundles:
     name: "Build custom CodeQL bundles"
@@ -56,10 +67,11 @@ jobs:
             # Copy custom modules
             lang=${lang_path##*/}
 
-            
+            using_packs=1
             if [ -d codeql/qlpacks/codeql-$lang-lib ]; then
               qllib_path=codeql/qlpacks/codeql-$lang-lib
               qlquery_path=codeql/qlpacks/codeql-$lang
+              using_packs=0
             else
               qllib_version=$(ls codeql/qlpacks/codeql/$lang-all)
               qllib_path=codeql/qlpacks/codeql/$lang-all/$qllib_version
@@ -84,10 +96,24 @@ jobs:
                   module_name=${module_file%.*}
                   echo "import customizations.$module_name" >> $qllib_path/Customizations.qll
                 done
-
-                # Rebuild cache
-                rm -r $qlquery_path/.cache
-                codeql/codeql query compile --search-path codeql --threads 0 $qlquery_path
+                
+                if [ using_packs ]
+                then
+                  echo "Rebuilding pack at $qlquery_path"
+                  rm $qlquery_path/codeql-pack.lock.yml
+                  content_dir=$RUNNER_TEMP/$lang
+                  pack_content=$content_dir/codeql/$lang-queries/$qlquery_version
+                  codeql/codeql pack create --additional-packs codeql/qlpacks/codeql/$lang-all:codeql/qlpacks/codeql/suite-helpers -j 0 --output=$content_dir $qlquery_path
+                  echo "Removing old pack content codeql/qlpacks/codeql/$lang-queries/$qlquery_version"
+                  rm -Rf codeql/qlpacks/codeql/$lang-queries/$qlquery_version
+                  echo "Moving pack content from '$pack_content' to codeql/qlpacks/codeql/$lang-queries"
+                  mv -v -f $pack_content codeql/qlpacks/codeql/$lang-queries/
+                else
+                  echo "Rebuilding cache"
+                  # Rebuild cache
+                  rm -r $qlquery_path/.cache
+                  codeql/codeql query compile --search-path codeql --threads 0 $qlquery_path
+                fi
               else
                 echo "::warning::Skipping customization for language $lang, because it doesn't have a Customizations.qll"
               fi
