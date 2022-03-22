@@ -47,8 +47,21 @@ with your additions.
    files in these directories as you wish. They will be combined and added to
    the appropriate extension points within your target language. 
 
-4. Modify your `codeql-analysis.yml` file to point at your custom bundle. Please
-   see the following file for an example: https://github.com/advanced-security/custom-codeql-bundle-test/blob/develop/.github/workflows/codeql-analysis.yml
+4. Modify your `codeql-analysis.yml` file to point at your custom bundle.
+   If it is private you can use the following configuration that downloads a private release using a GitHub PAT:
+   ```yaml
+   - name: Download CodeQL bundle
+      env:
+        GITHUB_TOKEN: ${{ secrets.CODEQL_BUNDLE_PAT }}
+      run: |
+        gh release -R advanced-security/custom-codeql-bundle download codeql-bundle-20211005-79ff94b
+    # Initializes the CodeQL tools for scanning.
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v1
+      with:
+        languages: ${{ matrix.language }}
+        tools: codeql-bundle.tar.gz
+   ```
 
 The relevant portion of that file when the CodeQL bundle repository is private is the following: 
 
