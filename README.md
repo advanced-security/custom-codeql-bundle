@@ -1,3 +1,8 @@
+# Deprecated
+
+This repository template is deprecated in favour of the GitHub Action [CodeQL Bundle Action](https://github.com/advanced-security/codeql-bundle-action).
+The repository will remain available in read-only mode, but it is advised to migrate.
+
 # Custom CodeQL Bundle
 
 The Custom CodeQL Bundle repository can be used in combination with GitHub
